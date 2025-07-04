@@ -1,4 +1,4 @@
-# # Document Extractor (docxtract)
+# Document Extractor (docxtract)
 
 A CLI tool for extracting structured content from academic PDF documents and generating high-quality Chinese summaries.
 
@@ -42,6 +42,8 @@ cp .env.example .env
 ```env
 AZURE_OPENAI_ENDPOINT=https://your-resource-name.openai.azure.com/
 AZURE_OPENAI_API_KEY=your-api-key-here
+AZURE_OPENAI_API_VERSION=2024-02-15-preview
+AZURE_OPENAI_DEPLOYMENT_NAME=your-gpt4-deployment-name
 ```
 
 3. Generate a summary (Markdown output):
@@ -58,27 +60,40 @@ python main.py summary research_paper.pdf -o summaries/paper.md
 ```markdown
 # Paper Title
 
-## 中文摘要
-(Overall summary generated from all section summaries)
+## Top-5 Important Points
 
-## Abstract
-(Abstract section summary)
+1. **Important Point 1**
+   Description of the first key finding or contribution
 
-## Introduction
-(Introduction section summary)
+2. **Important Point 2**
+   Description of the second key finding or contribution
 
-## Method
-(Method section summary)
+3. **Important Point 3**
+   Description of the third key finding or contribution
 
-## Results
-(Results section summary)
+4. **Important Point 4**
+   Description of the fourth key finding or contribution
 
-## Conclusion
-(Conclusion section summary)
+5. **Important Point 5**
+   Description of the fifth key finding or contribution
+
+## Application Ideas
+
+1. **Application Area 1**
+   Potential application or future research direction
+
+2. **Application Area 2**
+   Another potential application or research direction
+
+3. **Application Area 3**
+   Additional application possibilities
+
+## Chinese Summary
+
+(Overall summary generated from all section summaries in Traditional Chinese)
 
 ---
-*Extracted from: path/to/source.pdf*
-*Chinese summary generated using GPT-4.1, per-section summarization mode*
+*Chinese summary generated using GPT-4.1*
 ```
 
 ### Command Options
@@ -112,37 +127,51 @@ The tool generates Markdown files with the following structure:
 ```markdown
 # Paper Title
 
-## 中文摘要
-(Overall summary generated from all section summaries)
+## Top-5 Important Points
 
-## Abstract
-(Abstract section summary)
+1. **Important Point 1**
+   Description of the first key finding or contribution
 
-## Introduction
-(Introduction section summary)
+2. **Important Point 2**
+   Description of the second key finding or contribution
 
-## Method
-(Method section summary)
+3. **Important Point 3**
+   Description of the third key finding or contribution
 
-## Results
-(Results section summary)
+4. **Important Point 4**
+   Description of the fourth key finding or contribution
 
-## Conclusion
-(Conclusion section summary)
+5. **Important Point 5**
+   Description of the fifth key finding or contribution
+
+## Application Ideas
+
+1. **Application Area 1**
+   Potential application or future research direction
+
+2. **Application Area 2**
+   Another potential application or research direction
+
+3. **Application Area 3**
+   Additional application possibilities
+
+## Chinese Summary
+
+(Overall summary generated from all section summaries in Traditional Chinese)
 
 ---
-*Extracted from: path/to/source.pdf*
-*Chinese summary generated using GPT-4.1, per-section summarization mode*
+*Chinese summary generated using GPT-4.1*
 ```
 
 ## Project Structure
 
-```
+```text
 docxtract/
 ├── cli.py          # CLI interface using Typer
 ├── extract.py      # PDF text extraction with PyMuPDF
 ├── parser.py       # Section header detection and parsing
 ├── summarizer.py   # Chinese summary generation with Azure OpenAI (per-section logic)
+├── chain.py        # LangChain LCEL pipeline for document processing
 ├── writer.py       # Markdown file output
 ├── models.py       # Pydantic data models
 └── utils.py        # Shared utilities
@@ -157,7 +186,6 @@ docxtract/
 - `make check` &nbsp;&nbsp;&nbsp;&nbsp;# Check code typing using pyright
 - `make clean` &nbsp;&nbsp;&nbsp;&nbsp;# Clean Python cache files
 - `make unit-test` &nbsp;&nbsp;&nbsp;&nbsp;# Run unit tests
-- `make integration-test` &nbsp;&nbsp;&nbsp;&nbsp;# Run integration tests
 
 ## Development
 

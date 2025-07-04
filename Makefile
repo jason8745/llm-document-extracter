@@ -14,9 +14,6 @@ check:
 unit-test:
 	uv run pytest -v --cov=. --cov-report=term-missing
 
-integration-test:
-	uv run python ./test/main.py
-
 clean:
 	find . -type d -name "__pycache__" -exec rm -r {} +
 	rm
