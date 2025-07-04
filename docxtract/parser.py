@@ -100,7 +100,17 @@ class SectionParser:
 
             # Extract content (skip the header line)
             section_lines = lines[start_line + 1 : end_line]
-            content = "\n".join(section_lines).strip()
+
+            # Special handling: For Abstract, stop at 'Keywords:'
+            if section_name.lower() == "abstract":
+                filtered_lines = []
+                for line in section_lines:
+                    if re.match(r"^keywords\s*:", line.strip(), re.IGNORECASE):
+                        break
+                    filtered_lines.append(line)
+                content = "\n".join(filtered_lines).strip()
+            else:
+                content = "\n".join(section_lines).strip()
 
             if content:  # Only add sections with content
                 sections.append(DocumentSection(title=section_name, content=content))

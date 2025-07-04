@@ -60,55 +60,54 @@ class PDFExtractor:
 
     def detect_title(self, text: str) -> Optional[str]:
         """
-        Attempt to detect the document title from the text using heuristics.
-
-        Heuristics:
-        - Only consider the first 10 lines (titles are usually at the top)
-        - Skip empty lines
-        - Stop at common section headers (e.g., Abstract, Introduction, Keywords)
-        - Stop at lines likely to be author info (e.g., email, affiliations, research group)
-        - Only include lines that are reasonably long and not URLs/domains
-        - Combine consecutive lines to form a title, but stop if the combined title is long enough
-
-        Args:
-            text: Full document text
-
-        Returns:
-            Detected title or None if not found
+        Heuristic-based title detection from the top of the document.
+        - Only consider the first 3 non-empty lines
+        - Stop at section headers, author/affiliation/keywords lines, or single name lines
+        - Only return title if length is between 10 and 120 chars (inclusive)
         """
+        import re
+
         lines = text.split("\n")
         title_lines = []
-        for line in lines[:10]:  # Check first 10 lines
+        non_empty_count = 0
+        for line in lines:
             line = line.strip()
             if not line:
                 continue
-            # Stop if we hit common section headers
-            if line.lower() in ("abstract", "introduction", "keywords"):
+            non_empty_count += 1
+            lower = line.lower()
+
+            # Stop at section headers
+            if lower in ("abstract", "introduction", "keywords"):
                 break
-            # Stop if line looks like author info (contains @ or common patterns)
+
+            if re.match(r"^keywords\s*:?", line, re.IGNORECASE):
+                break
+
+            # If line is likely author/affiliation, break but do not append
             if (
                 "@" in line
-                or line.lower().startswith(
-                    ("author", "email", "university", "department")
-                )
-                or any(
-                    word in line.lower()
-                    for word in ["research", "institute", "lab", "group"]
-                )
-                and len(line) < 50
+                or lower.startswith(("author", "email", "university", "department"))
+                or any(word in lower for word in ["research", "institute", "lab", "group"])
+                or re.match(r"^authors?\s*:?", line, re.IGNORECASE)
+                or re.match(r"^[a-zA-Z .,'-]+\d?(,\s*[a-zA-Z .,'-]+\d?)+$", line)  # author list
+                or ("," in line and len(line.split(",")) > 1 and len(line) < 80)
+                or re.match(r"^[A-Z][a-zA-Z'`-]+ [A-Z][a-zA-Z'`-]+$", line)  # single name
             ):
                 break
-            # Add to title if it looks title-like
+
+            # Accept title-like lines
             if len(line) > 5 and not line.endswith((".com", ".edu", ".org")):
                 title_lines.append(line)
-                combined = " ".join(title_lines)
-                # If we have a reasonable length title, check if next line continues
-                if len(combined) > 30 and not line.endswith(":"):
-                    break
+
+            if non_empty_count >= 3:
+                break
+
         if title_lines:
-            combined_title = " ".join(title_lines)
-            if len(combined_title) < 300:  # Reasonable title length
+            combined_title = " ".join(title_lines).strip()
+            if 10 <= len(combined_title) <= 120:
                 return combined_title
+
         return None
 
     def extract_document(self, pdf_path: Path) -> ExtractedDocument:
