@@ -102,7 +102,12 @@ class ChineseSummarizer:
         self.deployment_name = os.getenv("AZURE_OPENAI_DEPLOYMENT_NAME")
 
         # Initialize the Azure ChatOpenAI client
-        if self.azure_endpoint and self.api_key and self.api_version and self.deployment_name:
+        if (
+            self.azure_endpoint
+            and self.api_key
+            and self.api_version
+            and self.deployment_name
+        ):
             self.llm = AzureChatOpenAI(
                 azure_endpoint=self.azure_endpoint,
                 api_key=self.api_key,

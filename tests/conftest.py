@@ -20,7 +20,7 @@ def sample_document_section():
     return DocumentSection(
         title="Abstract",
         content="This is a sample abstract content for testing purposes.",
-        page_numbers=[1]
+        page_numbers=[1],
     )
 
 
@@ -31,35 +31,35 @@ def sample_extracted_document():
         DocumentSection(
             title="Abstract",
             content="This paper presents a novel approach to document extraction.",
-            page_numbers=[1]
+            page_numbers=[1],
         ),
         DocumentSection(
             title="Introduction",
             content="Document processing has become increasingly important.",
-            page_numbers=[1, 2]
+            page_numbers=[1, 2],
         ),
         DocumentSection(
             title="Method",
             content="We propose a hybrid approach combining PDF parsing and NLP.",
-            page_numbers=[2, 3]
+            page_numbers=[2, 3],
         ),
         DocumentSection(
             title="Results",
             content="Our method achieves 95% accuracy on test documents.",
-            page_numbers=[3, 4]
+            page_numbers=[3, 4],
         ),
         DocumentSection(
             title="Conclusion",
             content="The proposed method shows significant improvements.",
-            page_numbers=[4]
+            page_numbers=[4],
         ),
     ]
-    
+
     return ExtractedDocument(
         title="A Novel Approach to Document Extraction",
         summary_zh="這篇論文提出了一種新的文檔提取方法，結合了PDF解析和自然語言處理技術。",
         sections=sections,
-        source_file="/path/to/test/document.pdf"
+        source_file="/path/to/test/document.pdf",
     )
 
 
@@ -69,7 +69,7 @@ def sample_summary_request():
     return SummaryRequest(
         document_content="This is sample document content for testing summary generation.",
         title="Test Document",
-        focus_areas=["methodology", "results", "contributions"]
+        focus_areas=["methodology", "results", "contributions"],
     )
 
 
@@ -124,7 +124,7 @@ def mock_llm_response():
         "method": "提出了結合PDF解析和自然語言處理的混合方法。",
         "results": "在100篇學術論文的測試集上達到95%的準確率。",
         "conclusion": "該方法相比現有方法有顯著改進。",
-        "overall": "這篇論文提出了一種新的文檔提取方法，結合了PDF解析和自然語言處理技術，在準確率和效率方面都有顯著提升。"
+        "overall": "這篇論文提出了一種新的文檔提取方法，結合了PDF解析和自然語言處理技術，在準確率和效率方面都有顯著提升。",
     }
 
 
@@ -135,7 +135,7 @@ def mock_azure_openai_config():
         "azure_endpoint": "https://test-openai.openai.azure.com/",
         "api_key": "test-api-key-12345",
         "api_version": "2024-02-15-preview",
-        "deployment_name": "gpt-4-turbo"
+        "deployment_name": "gpt-4-turbo",
     }
 
 

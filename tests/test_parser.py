@@ -19,10 +19,10 @@ class TestSectionParser:
     def test_init_default_patterns(self):
         """Test SectionParser initialization with default patterns."""
         parser = SectionParser()
-        
+
         # Should have compiled patterns
         assert len(parser.compiled_patterns) > 0
-        assert all(hasattr(pattern, 'match') for pattern, _ in parser.compiled_patterns)
+        assert all(hasattr(pattern, "match") for pattern, _ in parser.compiled_patterns)
 
     def test_init_custom_patterns(self):
         """Test SectionParser initialization with custom patterns."""
@@ -30,9 +30,9 @@ class TestSectionParser:
             (r"^Summary\s*$", "Summary"),
             (r"^Analysis\s*$", "Analysis"),
         ]
-        
+
         parser = SectionParser(section_patterns=custom_patterns)
-        
+
         assert len(parser.compiled_patterns) == 2
         # Check that custom patterns are used
         pattern_names = [name for _, name in parser.compiled_patterns]
@@ -59,13 +59,19 @@ class TestSectionParser:
         Conclusion
         This is the conclusion.
         """
-        
+
         parser = SectionParser()
         boundaries = parser.detect_section_boundaries(text)
-        
-        expected_sections = ["Abstract", "Introduction", "Method", "Results", "Conclusion"]
+
+        expected_sections = [
+            "Abstract",
+            "Introduction",
+            "Method",
+            "Results",
+            "Conclusion",
+        ]
         detected_sections = [name for name, _ in boundaries]
-        
+
         assert detected_sections == expected_sections
         assert len(boundaries) == 5
 
@@ -81,10 +87,10 @@ class TestSectionParser:
         MeThOd
         Method content.
         """
-        
+
         parser = SectionParser()
         boundaries = parser.detect_section_boundaries(text)
-        
+
         detected_sections = [name for name, _ in boundaries]
         assert "Abstract" in detected_sections
         assert "Introduction" in detected_sections
@@ -97,10 +103,10 @@ class TestSectionParser:
         section headers that we can detect.
         It should return an empty list.
         """
-        
+
         parser = SectionParser()
         boundaries = parser.detect_section_boundaries(text)
-        
+
         assert boundaries == []
 
     def test_detect_section_boundaries_with_whitespace(self):
@@ -115,37 +121,40 @@ class TestSectionParser:
         Method    
         Method content.
         """
-        
+
         parser = SectionParser()
         boundaries = parser.detect_section_boundaries(text)
-        
+
         detected_sections = [name for name, _ in boundaries]
         assert "Abstract" in detected_sections
         assert "Introduction" in detected_sections
         assert "Method" in detected_sections
 
-    @pytest.mark.parametrize("section_header,expected_name", [
-        ("Abstract", "Abstract"),
-        ("Introduction", "Introduction"),
-        ("Method", "Method"),
-        ("Methods", "Method"),
-        ("Methodology", "Methodology"),
-        ("Results", "Results"),
-        ("Result", "Results"),
-        ("Discussion", "Discussion"),
-        ("Conclusion", "Conclusion"),
-        ("Conclusions", "Conclusion"),
-        ("References", "References"),
-        ("Reference", "References"),
-        ("Bibliography", "References"),
-    ])
+    @pytest.mark.parametrize(
+        "section_header,expected_name",
+        [
+            ("Abstract", "Abstract"),
+            ("Introduction", "Introduction"),
+            ("Method", "Method"),
+            ("Methods", "Method"),
+            ("Methodology", "Methodology"),
+            ("Results", "Results"),
+            ("Result", "Results"),
+            ("Discussion", "Discussion"),
+            ("Conclusion", "Conclusion"),
+            ("Conclusions", "Conclusion"),
+            ("References", "References"),
+            ("Reference", "References"),
+            ("Bibliography", "References"),
+        ],
+    )
     def test_section_pattern_matching(self, section_header, expected_name):
         """Test individual section pattern matching."""
         text = f"{section_header}\nSome content here."
-        
+
         parser = SectionParser()
         boundaries = parser.detect_section_boundaries(text)
-        
+
         assert len(boundaries) == 1
         assert boundaries[0][0] == expected_name
 
@@ -165,22 +174,22 @@ class TestSectionParser:
         Method
         Methodology description here.
         """
-        
+
         parser = SectionParser()
         sections = parser.extract_sections(text)
-        
+
         assert len(sections) == 3
-        
+
         # Check Abstract section
         abstract = next(s for s in sections if s.title == "Abstract")
         assert "abstract content" in abstract.content
         assert "multiple lines" in abstract.content
-        
+
         # Check Introduction section
         introduction = next(s for s in sections if s.title == "Introduction")
         assert "introduction" in introduction.content
         assert "more details" in introduction.content
-        
+
         # Check Method section
         method = next(s for s in sections if s.title == "Method")
         assert "Methodology description" in method.content
@@ -188,10 +197,10 @@ class TestSectionParser:
     def test_extract_sections_no_headers(self):
         """Test extraction when no section headers are found."""
         text = "This is just plain text without any section headers."
-        
+
         parser = SectionParser()
         sections = parser.extract_sections(text)
-        
+
         assert len(sections) == 1
         assert sections[0].title == "Full Content"
         assert sections[0].content == text
@@ -209,10 +218,10 @@ class TestSectionParser:
         Results
         This also has content.
         """
-        
+
         parser = SectionParser()
         sections = parser.extract_sections(text)
-        
+
         # Should only get sections with content
         section_titles = [s.title for s in sections]
         assert "Introduction" in section_titles
@@ -234,10 +243,10 @@ class TestSectionParser:
         This is the final conclusion.
         It should be properly extracted.
         """
-        
+
         parser = SectionParser()
         sections = parser.extract_sections(text)
-        
+
         conclusion = next(s for s in sections if s.title == "Conclusion")
         assert "final conclusion" in conclusion.content
         assert "properly extracted" in conclusion.content
@@ -261,33 +270,45 @@ class TestSectionParser:
         Conclusion
         The proposed method shows significant improvements.
         """
-        
+
         # Create document with the sectioned content
         document = ExtractedDocument(
             title="Test Document",
-            sections=[DocumentSection(title="Full Content", content=text_with_sections)],
-            source_file="/test/file.pdf"
+            sections=[
+                DocumentSection(title="Full Content", content=text_with_sections)
+            ],
+            source_file="/test/file.pdf",
         )
-        
+
         parser = SectionParser()
         parsed_document = parser.parse_document(document)
-        
+
         assert len(parsed_document.sections) == 5
         section_titles = [s.title for s in parsed_document.sections]
-        expected_titles = ["Abstract", "Introduction", "Method", "Results", "Conclusion"]
+        expected_titles = [
+            "Abstract",
+            "Introduction",
+            "Method",
+            "Results",
+            "Conclusion",
+        ]
         assert section_titles == expected_titles
 
     def test_parse_document_no_sections(self):
         """Test parsing a document without section headers."""
         document = ExtractedDocument(
             title="Test Document",
-            sections=[DocumentSection(title="Full Content", content="Plain text without sections")],
-            source_file="/test/file.pdf"
+            sections=[
+                DocumentSection(
+                    title="Full Content", content="Plain text without sections"
+                )
+            ],
+            source_file="/test/file.pdf",
         )
-        
+
         parser = SectionParser()
         parsed_document = parser.parse_document(document)
-        
+
         assert len(parsed_document.sections) == 1
         assert parsed_document.sections[0].title == "Full Content"
         assert parsed_document.sections[0].content == "Plain text without sections"
@@ -295,14 +316,12 @@ class TestSectionParser:
     def test_parse_document_empty_sections(self):
         """Test parsing a document with no sections."""
         document = ExtractedDocument(
-            title="Test Document",
-            sections=[],
-            source_file="/test/file.pdf"
+            title="Test Document", sections=[], source_file="/test/file.pdf"
         )
-        
+
         parser = SectionParser()
         parsed_document = parser.parse_document(document)
-        
+
         assert len(parsed_document.sections) == 0
 
     def test_parse_document_preserves_metadata(self):
@@ -310,18 +329,20 @@ class TestSectionParser:
         document = ExtractedDocument(
             title="Original Title",
             summary_zh="Original summary",
-            sections=[DocumentSection(title="Full Content", content="Abstract\nContent here.")],
-            source_file="/original/path.pdf"
+            sections=[
+                DocumentSection(title="Full Content", content="Abstract\nContent here.")
+            ],
+            source_file="/original/path.pdf",
         )
-        
+
         parser = SectionParser()
         parsed_document = parser.parse_document(document)
-        
+
         # Metadata should be preserved
         assert parsed_document.title == "Original Title"
         assert parsed_document.summary_zh == "Original summary"
         assert parsed_document.source_file == "/original/path.pdf"
-        
+
         # But sections should be parsed
         assert len(parsed_document.sections) == 1
         assert parsed_document.sections[0].title == "Abstract"
@@ -381,24 +402,32 @@ class TestSectionParserIntegration:
         [1] Smith, J. et al. (2020). Machine Learning for Documents.
         [2] Doe, J. et al. (2021). AI in Text Processing.
         """
-        
+
         parser = SectionParser()
         sections = parser.extract_sections(paper_text)
-        
+
         # Should extract all major sections
         section_titles = [s.title for s in sections]
-        expected_sections = ["Abstract", "Introduction", "Methodology", "Results", "Discussion", "Conclusion", "References"]
-        
+        expected_sections = [
+            "Abstract",
+            "Introduction",
+            "Methodology",
+            "Results",
+            "Discussion",
+            "Conclusion",
+            "References",
+        ]
+
         assert all(title in section_titles for title in expected_sections)
-        
+
         # Check content quality
         abstract = next(s for s in sections if s.title == "Abstract")
         assert "comprehensive review" in abstract.content
         assert "Keywords:" not in abstract.content  # Should not include keywords line
-        
+
         introduction = next(s for s in sections if s.title == "Introduction")
         assert "main contributions" in introduction.content
-        
+
         results = next(s for s in sections if s.title == "Results")
         assert "150 relevant studies" in results.content
 
@@ -413,7 +442,7 @@ class TestSectionParserIntegration:
             (r"^Evaluation\s*$", "Evaluation"),
             (r"^Recommendations\s*$", "Recommendations"),
         ]
-        
+
         report_text = """
         Technical Report: System Optimization
         
@@ -435,16 +464,22 @@ class TestSectionParserIntegration:
         Recommendations
         We recommend full deployment of the optimized system.
         """
-        
+
         parser = SectionParser(section_patterns=custom_patterns)
         sections = parser.extract_sections(report_text)
-        
+
         section_titles = [s.title for s in sections]
-        expected_titles = ["Executive Summary", "Problem Statement", "Proposed Solution", 
-                          "Implementation", "Evaluation", "Recommendations"]
-        
+        expected_titles = [
+            "Executive Summary",
+            "Problem Statement",
+            "Proposed Solution",
+            "Implementation",
+            "Evaluation",
+            "Recommendations",
+        ]
+
         assert section_titles == expected_titles
-        
+
         # Verify content
         exec_summary = next(s for s in sections if s.title == "Executive Summary")
         assert "optimization project" in exec_summary.content

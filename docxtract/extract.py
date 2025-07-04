@@ -88,11 +88,17 @@ class PDFExtractor:
             if (
                 "@" in line
                 or lower.startswith(("author", "email", "university", "department"))
-                or any(word in lower for word in ["research", "institute", "lab", "group"])
+                or any(
+                    word in lower for word in ["research", "institute", "lab", "group"]
+                )
                 or re.match(r"^authors?\s*:?", line, re.IGNORECASE)
-                or re.match(r"^[a-zA-Z .,'-]+\d?(,\s*[a-zA-Z .,'-]+\d?)+$", line)  # author list
+                or re.match(
+                    r"^[a-zA-Z .,'-]+\d?(,\s*[a-zA-Z .,'-]+\d?)+$", line
+                )  # author list
                 or ("," in line and len(line.split(",")) > 1 and len(line) < 80)
-                or re.match(r"^[A-Z][a-zA-Z'`-]+ [A-Z][a-zA-Z'`-]+$", line)  # single name
+                or re.match(
+                    r"^[A-Z][a-zA-Z'`-]+ [A-Z][a-zA-Z'`-]+$", line
+                )  # single name
             ):
                 break
 
