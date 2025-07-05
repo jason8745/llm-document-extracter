@@ -28,12 +28,6 @@ from .extract import PDFExtractor
 from .parser import SectionParser
 from .summarizer import ChineseSummarizer
 
-# Prompt templates for LLM
-POINTS_PROMPT = (
-    "請根據以下論文總結，列出最重要的五個重點（繁體中文，條列式）：\n{summary}"
-)
-IDEAS_PROMPT = "請根據以下論文總結，提出可能的延伸應用或未來研究方向（繁體中文，條列式）：\n{summary}"
-
 
 def extract_pdf_step(pdf_path: Path) -> Dict[str, Any]:
     """Extract text and metadata from the PDF file."""
@@ -82,27 +76,64 @@ def summarize_overall_step(inputs: Dict[str, Any]) -> Dict[str, Any]:
     }
 
 
+def load_prompt_template(path: Path) -> str:
+    """Load prompt template from file."""
+    return path.read_text(encoding="utf-8").strip()
+
+
+def get_take_away_prompt(summary: str) -> str:
+    template = load_prompt_template(
+        Path(__file__).parent / "prompts" / "take_away_prompt.md"
+    )
+    return template.format(summary=summary)
+
+
+def get_ideas_prompt(summary: str) -> str:
+    template = load_prompt_template(
+        Path(__file__).parent / "prompts" / "generate_ideas_prompt.md"
+    )
+    return template.format(summary=summary)
+
+
+def generate_important_points(
+    summarizer: ChineseSummarizer, overall_summary: str
+) -> str:
+    """Generate important points using the LLM."""
+    try:
+        if not summarizer.llm:
+            return ""
+
+        points_prompt = get_take_away_prompt(overall_summary)
+        response = summarizer.llm.invoke([HumanMessage(content=points_prompt)])
+        return response.content.strip()
+    except Exception:
+        return "(Failed to generate important points)"
+
+
+def generate_application_ideas(
+    summarizer: ChineseSummarizer, overall_summary: str
+) -> str:
+    """Generate application ideas using the LLM."""
+    try:
+        if not summarizer.llm:
+            return ""
+
+        ideas_prompt = get_ideas_prompt(overall_summary)
+        response = summarizer.llm.invoke([HumanMessage(content=ideas_prompt)])
+        return response.content.strip()
+    except Exception:
+        return "(Failed to generate application ideas)"
+
+
 def important_points_and_ideas_step(inputs: Dict[str, Any]) -> Dict[str, Any]:
     """Generate top-5 important points and application ideas using the LLM."""
     summarizer = ChineseSummarizer()
     doc = inputs["document"]
     overall_summary = inputs["overall_summary"]
-    try:
-        points_prompt = POINTS_PROMPT.format(summary=overall_summary)
-        ideas_prompt = IDEAS_PROMPT.format(summary=overall_summary)
-        points = (
-            summarizer.llm.invoke([HumanMessage(content=points_prompt)]).content.strip()
-            if summarizer.llm
-            else ""
-        )
-        ideas = (
-            summarizer.llm.invoke([HumanMessage(content=ideas_prompt)]).content.strip()
-            if summarizer.llm
-            else ""
-        )
-    except Exception as e:
-        points = "(Failed to generate important points)"
-        ideas = "(Failed to generate application ideas)"
+
+    points = generate_important_points(summarizer, overall_summary)
+    ideas = generate_application_ideas(summarizer, overall_summary)
+
     return {
         "document": doc,
         "section_summaries": inputs["section_summaries"],

@@ -8,7 +8,12 @@ import pytest
 from docxtract.chain import (
     DocExtractPipeline,
     extract_pdf_step,
+    generate_application_ideas,
+    generate_important_points,
+    get_ideas_prompt,
+    get_take_away_prompt,
     important_points_and_ideas_step,
+    load_prompt_template,
     parse_sections_step,
     summarize_overall_step,
     summarize_sections_step,
@@ -182,10 +187,45 @@ class TestChainSteps:
 
     def test_important_points_and_ideas_step_success(self, sample_document):
         """Test successful important points and ideas generation."""
+        with (
+            patch("docxtract.chain.generate_important_points") as mock_points,
+            patch("docxtract.chain.generate_application_ideas") as mock_ideas,
+        ):
+            mock_points.return_value = "1. Important point one\n2. Important point two"
+            mock_ideas.return_value = "1. Application idea one\n2. Application idea two"
+
+            inputs = {
+                "document": sample_document,
+                "section_summaries": {"Abstract": "Summary"},
+                "overall_summary": "Overall summary text",
+            }
+            result = important_points_and_ideas_step(inputs)
+
+            assert "important_points" in result
+            assert "ideas" in result
+            assert (
+                result["important_points"]
+                == "1. Important point one\n2. Important point two"
+            )
+            assert result["ideas"] == "1. Application idea one\n2. Application idea two"
+
+            # Verify the functions were called with correct arguments
+            mock_points.assert_called_once()
+            mock_ideas.assert_called_once()
+            # The summarizer should be passed as first argument
+            points_call_args = mock_points.call_args[0]
+            ideas_call_args = mock_ideas.call_args[0]
+            assert (
+                points_call_args[1] == "Overall summary text"
+            )  # summary is second arg
+            assert ideas_call_args[1] == "Overall summary text"
+
+    def test_important_points_and_ideas_step_with_real_functions(self, sample_document):
+        """Test important points and ideas step with real function calls (integration-style)."""
         with patch("docxtract.chain.ChineseSummarizer") as mock_summarizer_class:
             mock_llm = Mock()
             mock_response = Mock()
-            mock_response.content = "Important points response"
+            mock_response.content = "   Response with whitespace   "
             mock_llm.invoke.return_value = mock_response
 
             mock_summarizer = Mock()
@@ -201,16 +241,19 @@ class TestChainSteps:
 
             assert "important_points" in result
             assert "ideas" in result
-            assert result["important_points"] == "Important points response"
-            assert result["ideas"] == "Important points response"
+            # Should strip whitespace from responses
+            assert result["important_points"] == "Response with whitespace"
+            assert result["ideas"] == "Response with whitespace"
             assert mock_llm.invoke.call_count == 2  # Called for both points and ideas
 
     def test_important_points_and_ideas_step_no_llm(self, sample_document):
         """Test important points and ideas step when LLM is None."""
-        with patch("docxtract.chain.ChineseSummarizer") as mock_summarizer_class:
-            mock_summarizer = Mock()
-            mock_summarizer.llm = None
-            mock_summarizer_class.return_value = mock_summarizer
+        with (
+            patch("docxtract.chain.generate_important_points") as mock_points,
+            patch("docxtract.chain.generate_application_ideas") as mock_ideas,
+        ):
+            mock_points.return_value = ""
+            mock_ideas.return_value = ""
 
             inputs = {
                 "document": sample_document,
@@ -225,14 +268,13 @@ class TestChainSteps:
             assert result["ideas"] == ""
 
     def test_important_points_and_ideas_step_failure(self, sample_document):
-        """Test important points and ideas step with LLM failure."""
-        with patch("docxtract.chain.ChineseSummarizer") as mock_summarizer_class:
-            mock_llm = Mock()
-            mock_llm.invoke.side_effect = Exception("LLM call failed")
-
-            mock_summarizer = Mock()
-            mock_summarizer.llm = mock_llm
-            mock_summarizer_class.return_value = mock_summarizer
+        """Test important points and ideas step with function failures."""
+        with (
+            patch("docxtract.chain.generate_important_points") as mock_points,
+            patch("docxtract.chain.generate_application_ideas") as mock_ideas,
+        ):
+            mock_points.return_value = "(Failed to generate important points)"
+            mock_ideas.return_value = "(Failed to generate application ideas)"
 
             inputs = {
                 "document": sample_document,
@@ -335,41 +377,148 @@ class TestDocExtractPipeline:
 
 
 class TestPromptTemplates:
-    """Test cases for prompt templates."""
+    """Test cases for prompt templates and prompt loading functions."""
 
-    def test_points_prompt_template(self):
-        """Test POINTS_PROMPT template formatting."""
-        from docxtract.chain import POINTS_PROMPT
+    def test_load_prompt_template_success(self, tmp_path):
+        """Test successful loading of prompt template from file."""
+        # Create a temporary template file
+        template_file = tmp_path / "test_template.md"
+        template_content = "Test template with {placeholder}"
+        template_file.write_text(template_content, encoding="utf-8")
 
+        result = load_prompt_template(template_file)
+
+        assert result == template_content
+
+    def test_load_prompt_template_file_not_found(self):
+        """Test prompt template loading with non-existent file."""
+        non_existent_path = Path("non_existent_template.md")
+
+        with pytest.raises(FileNotFoundError):
+            load_prompt_template(non_existent_path)
+
+    def test_get_take_away_prompt_formatting(self):
+        """Test take away prompt loading and formatting."""
         test_summary = "這是一個測試總結"
-        formatted = POINTS_PROMPT.format(summary=test_summary)
 
-        assert "五個重點" in formatted
-        assert "繁體中文" in formatted
-        assert "條列式" in formatted
-        assert test_summary in formatted
+        result = get_take_away_prompt(test_summary)
 
-    def test_ideas_prompt_template(self):
-        """Test IDEAS_PROMPT template formatting."""
-        from docxtract.chain import IDEAS_PROMPT
+        # Should contain the formatted summary
+        assert test_summary in result
+        # Should contain Chinese text indicators from the template
+        assert "重點摘要提取" in result
 
+    def test_get_ideas_prompt_formatting(self):
+        """Test ideas prompt loading and formatting."""
         test_summary = "這是一個測試總結"
-        formatted = IDEAS_PROMPT.format(summary=test_summary)
 
-        assert "延伸應用" in formatted or "研究方向" in formatted
-        assert "繁體中文" in formatted
-        assert "條列式" in formatted
-        assert test_summary in formatted
+        result = get_ideas_prompt(test_summary)
 
-    def test_prompt_templates_are_strings(self):
-        """Test that prompt templates are valid strings."""
-        from docxtract.chain import IDEAS_PROMPT, POINTS_PROMPT
+        # Should contain the formatted summary
+        assert test_summary in result
+        # Should contain Chinese text indicators from the template
+        assert "延伸應用" in result or "研究方向" in result
 
-        assert isinstance(POINTS_PROMPT, str)
-        assert isinstance(IDEAS_PROMPT, str)
-        assert len(POINTS_PROMPT.strip()) > 0
-        assert len(IDEAS_PROMPT.strip()) > 0
+    @patch("docxtract.chain.load_prompt_template")
+    def test_get_take_away_prompt_with_mock_template(self, mock_load):
+        """Test take away prompt with mocked template loading."""
+        mock_template = "Mock template: {summary}"
+        mock_load.return_value = mock_template
+        test_summary = "test summary"
 
-        # Should contain format placeholder
-        assert "{summary}" in POINTS_PROMPT
-        assert "{summary}" in IDEAS_PROMPT
+        result = get_take_away_prompt(test_summary)
+
+        assert result == "Mock template: test summary"
+        mock_load.assert_called_once()
+
+    @patch("docxtract.chain.load_prompt_template")
+    def test_get_ideas_prompt_with_mock_template(self, mock_load):
+        """Test ideas prompt with mocked template loading."""
+        mock_template = "Mock ideas template: {summary}"
+        mock_load.return_value = mock_template
+        test_summary = "test summary"
+
+        result = get_ideas_prompt(test_summary)
+
+        assert result == "Mock ideas template: test summary"
+        mock_load.assert_called_once()
+
+
+class TestNewPromptFunctions:
+    """Test cases for new prompt generation functions."""
+
+    def test_generate_important_points_success(self):
+        """Test successful generation of important points."""
+        mock_summarizer = Mock()
+        mock_llm = Mock()
+        mock_response = Mock()
+        mock_response.content = "1. Important point one\n2. Important point two"
+        mock_llm.invoke.return_value = mock_response
+        mock_summarizer.llm = mock_llm
+
+        result = generate_important_points(mock_summarizer, "test summary")
+
+        assert result == "1. Important point one\n2. Important point two"
+        mock_llm.invoke.assert_called_once()
+        # Verify the call contains a HumanMessage with formatted prompt
+        call_args = mock_llm.invoke.call_args[0][0]
+        assert len(call_args) == 1
+        assert "test summary" in call_args[0].content
+
+    def test_generate_important_points_no_llm(self):
+        """Test important points generation when LLM is None."""
+        mock_summarizer = Mock()
+        mock_summarizer.llm = None
+
+        result = generate_important_points(mock_summarizer, "test summary")
+
+        assert result == ""
+
+    def test_generate_important_points_llm_failure(self):
+        """Test important points generation when LLM call fails."""
+        mock_summarizer = Mock()
+        mock_llm = Mock()
+        mock_llm.invoke.side_effect = Exception("LLM error")
+        mock_summarizer.llm = mock_llm
+
+        result = generate_important_points(mock_summarizer, "test summary")
+
+        assert result == "(Failed to generate important points)"
+
+    def test_generate_application_ideas_success(self):
+        """Test successful generation of application ideas."""
+        mock_summarizer = Mock()
+        mock_llm = Mock()
+        mock_response = Mock()
+        mock_response.content = "1. Application idea one\n2. Application idea two"
+        mock_llm.invoke.return_value = mock_response
+        mock_summarizer.llm = mock_llm
+
+        result = generate_application_ideas(mock_summarizer, "test summary")
+
+        assert result == "1. Application idea one\n2. Application idea two"
+        mock_llm.invoke.assert_called_once()
+        # Verify the call contains a HumanMessage with formatted prompt
+        call_args = mock_llm.invoke.call_args[0][0]
+        assert len(call_args) == 1
+        assert "test summary" in call_args[0].content
+
+    def test_generate_application_ideas_no_llm(self):
+        """Test application ideas generation when LLM is None."""
+        mock_summarizer = Mock()
+        mock_summarizer.llm = None
+
+        result = generate_application_ideas(mock_summarizer, "test summary")
+
+        assert result == ""
+
+    def test_generate_application_ideas_llm_failure(self):
+        """Test application ideas generation when LLM call fails."""
+        mock_summarizer = Mock()
+        mock_llm = Mock()
+        mock_llm.invoke.side_effect = Exception("LLM error")
+        mock_summarizer.llm = mock_llm
+
+        result = generate_application_ideas(mock_summarizer, "test summary")
+
+        assert result == "(Failed to generate application ideas)"
