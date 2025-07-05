@@ -110,7 +110,7 @@ Options:
 ### Examples
 
 ```bash
-# Generate summary and save to default output path
+# Generate summary and save to default output path (/summaries/**.md)
 python main.py summary research_paper.pdf
 
 # Generate summary with custom output path

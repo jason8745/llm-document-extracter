@@ -48,7 +48,9 @@ def summary(
     """
     # Determine output path if not provided
     if not output and not preview:
-        output = pdf_path.with_suffix(".md")
+        output_dir = Path("summaries")
+        output_dir.mkdir(parents=True, exist_ok=True)
+        output = output_dir / (pdf_path.stem + ".md")
 
     try:
         with Progress(
