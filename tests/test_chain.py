@@ -405,8 +405,12 @@ class TestPromptTemplates:
 
         # Should contain the formatted summary
         assert test_summary in result
-        # Should contain Chinese text indicators from the template
+        # Should contain key elements from the new template
         assert "重點摘要提取" in result
+        assert "研究洞察分析師" in result
+        assert "核心問題/動機" in result
+        assert "技術創新" in result
+        assert "應用潛力" in result
 
     def test_get_ideas_prompt_formatting(self):
         """Test ideas prompt loading and formatting."""
@@ -416,8 +420,12 @@ class TestPromptTemplates:
 
         # Should contain the formatted summary
         assert test_summary in result
-        # Should contain Chinese text indicators from the template
-        assert "延伸應用" in result or "研究方向" in result
+        # Should contain key elements from the new template
+        assert "延伸應用構思" in result
+        assert "創新應用分析師" in result
+        assert "核心技術萃取" in result
+        assert "落地可行性" in result
+        assert "商業價值" in result
 
     @patch("docxtract.chain.load_prompt_template")
     def test_get_take_away_prompt_with_mock_template(self, mock_load):
