@@ -46,56 +46,6 @@ AZURE_OPENAI_API_VERSION=2024-02-15-preview
 AZURE_OPENAI_DEPLOYMENT_NAME=your-gpt4-deployment-name
 ```
 
-3. Generate a summary (Markdown output):
-
-```bash
-python main.py summary research_paper.pdf -o summaries/paper.md
-```
-
-- Each section (Abstract, Introduction, Method, Results, Conclusion, etc.) is summarized separately to avoid token overflow and improve quality.
-- Specialized prompts are used for key sections (e.g., Abstract, Conclusion) to extract more valuable information.
-- All section summaries are then combined to generate an overall Chinese summary.
-- The output is a Markdown file with the following structure:
-
-```markdown
-# Paper Title
-
-## Top-5 Important Points
-
-1. **Important Point 1**
-   Description of the first key finding or contribution
-
-2. **Important Point 2**
-   Description of the second key finding or contribution
-
-3. **Important Point 3**
-   Description of the third key finding or contribution
-
-4. **Important Point 4**
-   Description of the fourth key finding or contribution
-
-5. **Important Point 5**
-   Description of the fifth key finding or contribution
-
-## Application Ideas
-
-1. **Application Area 1**
-   Potential application or future research direction
-
-2. **Application Area 2**
-   Another potential application or research direction
-
-3. **Application Area 3**
-   Additional application possibilities
-
-## Chinese Summary
-
-(Overall summary generated from all section summaries in Traditional Chinese)
-
----
-*Chinese summary generated using GPT-4.1*
-```
-
 ### Command Options
 
 ```bash
